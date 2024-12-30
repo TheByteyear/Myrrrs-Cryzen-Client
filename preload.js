@@ -1,7 +1,6 @@
 const { contextBridge } = require("electron");
 
 window.addEventListener("DOMContentLoaded", () => {
-  // Tampermonkey-Skript einfügen
   const script1 = document.createElement("script"); // Ads breaker
   script1.innerHTML = `
     const { log, debug, warn, error } = console;
