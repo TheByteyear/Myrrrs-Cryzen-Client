@@ -1,0 +1,26 @@
+{
+    "name": "myrrr-client",
+    "version": "1.0.0",
+    "main": "main.js",
+    "scripts": {
+        "start": "electron .",
+        "dist": "electron-builder"
+    },
+    "devDependencies": {
+        "electron": "^33.2.1",
+        "electron-builder": "^25.1.8"
+    },
+    "build": {
+        "appId": "com.myrrr.client",
+        "productName": "Myrrr's Cryzen Client",
+        "win": {
+            "target": [
+                "nsis"
+            ],
+            "icon": "icon.ico"
+        },
+        "directories": {
+            "output": "dist"
+        }
+    }
+}
