@@ -1,4 +1,4 @@
-# Myrrrs-Cryzen-Client
+# Myrrrs Cryzen Client
 ![icon](/icon.ico)
 
 A electron client for the game **Cryzen.io** with some extra features.
