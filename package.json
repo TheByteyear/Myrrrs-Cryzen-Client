@@ -22,5 +22,8 @@
         "directories": {
             "output": "dist"
         }
+    },
+    "author": {
+    "name": "myrrr"
     }
 }
