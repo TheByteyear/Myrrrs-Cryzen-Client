@@ -297,24 +297,6 @@ window.addEventListener("DOMContentLoaded", () => {
   const script2 = document.createElement("script"); //settings panel
   script2.innerHTML = `
 
-    const websockets = [];
-    window.WebSocket = new Proxy(WebSocket, {
-        construct(target, args) {
-            const ws = new target(...args);
-            websockets.push(ws);
-            return ws;
-        }
-    });
-
-    function disconnect() {
-        for (const ws of websockets) {
-            ws.onmessage = null;
-            ws.onerror = null;
-            ws.onclose = null;
-            ws.close();
-        }
-    }
-
     Object.defineProperty(window, 'IS_PROD', {
         set() {},
         get() {
