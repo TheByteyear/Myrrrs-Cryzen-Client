@@ -13,6 +13,7 @@ A electron client for the game **Cryzen.io** with some extra features.
 - custom sky
 - clear scope
 - player counter
+- ads skip
 
 ## How to use:
 - run *Myrrr's Cryzen Client Setup 1.0.0.exe* to install the client
