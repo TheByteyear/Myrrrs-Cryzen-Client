@@ -1,11 +1,12 @@
 const { contextBridge } = require("electron");
 
 window.addEventListener("DOMContentLoaded", () => {
+  // Tampermonkey-Skript einfügen
   const script1 = document.createElement("script"); // Ads breaker
   script1.innerHTML = `
     const { log, debug, warn, error } = console;
 
-    // Ad stuff (Makes Poki SDK work with most adblockers, the ad will be skipped but the rewards will still be granted)
+    // block ads
     function skipRewardedBreak() {
         return new Promise(resolve => {
             resolve(true);
@@ -296,617 +297,194 @@ window.addEventListener("DOMContentLoaded", () => {
   const script2 = document.createElement("script"); //settings panel
   script2.innerHTML = `
 
-    Object.defineProperty(window, 'IS_PROD', {
-        set() {},
-        get() {
-            return false;
+  const CLANS_URL    = '/clans';
+  const VIDEOS_URL   = '/center/videos';
+  const EU_API       = 'https://eu.cryzen.io/matchmake/lobby';
+  const US_API       = 'https://us.cryzen.io/matchmake/lobby';
+  const UPDATE_INT   = 60_000;
+
+  let euDiv, usDiv;
+  let lastPath = location.pathname;
+
+  function waitFor(selector, timeout = 5000) {
+    return new Promise((res, rej) => {
+      const interval = 100;
+      let elapsed = 0;
+      const h = setInterval(() => {
+        const el = document.querySelector(selector);
+        if (el) {
+          clearInterval(h);
+          res(el);
+        } else if ((elapsed += interval) >= timeout) {
+          clearInterval(h);
+          rej(\`Timeout waiting for \${selector}\`);
         }
+      }, interval);
     });
-
-
-    (function () {
-                'use strict';
-
-                const fontLink = document.createElement('link');
-                fontLink.href = 'https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap';
-                fontLink.rel = 'stylesheet';
-                document.head.appendChild(fontLink);
-
-                const globalStyle = document.createElement('style');
-                globalStyle.innerHTML = \`
-                    * {
-                        font-family: 'Roboto', sans-serif !important;
-                        user-select: none;
-                    }
-                \`;
-                document.head.appendChild(globalStyle);
-
-                const settingsButton = document.createElement('div');
-                settingsButton.id = 'settingsButton';
-                settingsButton.textContent = '⚙';
-                settingsButton.style.position = 'fixed';
-                settingsButton.style.top = '400px';
-                settingsButton.style.right = '10px';
-                settingsButton.style.width = '45px';
-                settingsButton.style.height = '45px';
-                settingsButton.style.background = '#333';
-                settingsButton.style.color = '#fff';
-                settingsButton.style.display = 'none';
-                settingsButton.style.alignItems = 'center';
-                settingsButton.style.justifyContent = 'center';
-                settingsButton.style.borderRadius = '50%';
-                settingsButton.style.cursor = 'pointer';
-                settingsButton.style.zIndex = '1001';
-                settingsButton.style.fontSize = '24px';
-                settingsButton.style.fontWeight = 'bold';
-                settingsButton.style.boxShadow = '0 0 5px rgba(0, 0, 0, 0.5)';
-                settingsButton.style.transition = 'background-color 0.5s';
-                settingsButton.style.display = 'flex';
-                document.body.appendChild(settingsButton);
-
-                settingsButton.addEventListener('mouseenter', () => {
-                    settingsButton.style.background = 'linear-gradient(45deg, #d400ff, #6600ff)';
-                });
-
-                settingsButton.addEventListener('mouseleave', () => {
-                    settingsButton.style.background = '#333';
-                });
-
-                document.addEventListener('keydown', (event) => {
-                    if (event.key === 'Insert') {
-                    settingsButton.style.display = settingsButton.style.display === 'none' ? 'flex' : 'none';
-                    }
-                });
-
-                const settingsPanel = document.createElement('div');
-                settingsPanel.id = 'settingsPanel';
-                settingsPanel.style.display = 'none';
-                settingsPanel.style.position = 'fixed';
-                settingsPanel.style.top = '10%';
-                settingsPanel.style.right = '10px';
-                settingsPanel.style.minWidth = '18vw';
-                settingsPanel.style.width = 'auto';
-                settingsPanel.style.height = 'auto';
-                settingsPanel.style.background = 'rgba(0, 0, 0, 0.8)';
-                settingsPanel.style.borderRadius = '15px';
-                settingsPanel.style.boxShadow = '0 0 10px rgba(0, 0, 0, 0.5)';
-                settingsPanel.style.zIndex = '1000';
-                settingsPanel.style.padding = '20px';
-                settingsPanel.style.overflowY = 'auto';
-                settingsPanel.style.transition = 'transform 0.3s ease-out, opacity 0.3s ease-out';
-                settingsPanel.style.transform = 'translateX(100%)';
-                settingsPanel.style.opacity = '0';
-
-                document.body.appendChild(settingsPanel);
-
-                const style = document.createElement('style');
-                style.innerHTML = \`
-                    .switch {
-                        position: relative;
-                        display: flex;
-                        align-items: center;
-                        margin-bottom: 15px;
-                        padding: 10px;
-                        box-sizing: border-box;
-                        width: 300px;
-                        background: #222;
-                        border-radius: 10px;
-                        margin-left: 30px;
-                    }
-
-                    .switchLabel {
-                        color: white;
-                        font-size: 16px;
-                        margin-right: 10px;
-                        flex: 1;
-                    }
-
-                    .switch input {
-                        opacity: 0;
-                        width: 0;
-                        height: 0;
-                    }
-
-                    .slider {
-                        position: relative;
-                        cursor: pointer;
-                        width: 50px;
-                        height: 24px;
-                        background-color: #ccc;
-                        border-radius: 24px;
-                        transition: .4s;
-                        border: 2px solid #888;
-                    }
-
-                    .slider:before {
-                        position: absolute;
-                        content: "";
-                        height: 20px;
-                        width: 20px;
-                        border-radius: 50%;
-                        left: 2px;
-                        bottom: 2px;
-                        background-color: white;
-                        transition: .4s;
-                    }
-
-                    input:checked + .slider {
-                        background-color: #6617FD;
-                        border-color: #9912FD;
-                    }
-
-                    input:checked + .slider:before {
-                        transform: translateX(23px);
-                    }
-
-                    .slider.off {
-                        background-color: #0e1111;
-                        border-color: #000000;
-                    }
-
-                    .slider.off:before {
-                        transform: translateX(0);
-                    }
-
-                    .tooltip {
-                        position: absolute;
-                        background-color: rgba(0, 0, 0, 0.9);
-                        color: white;
-                        padding: 15px 20px;
-                        border-radius: 10px;
-                        font-size: 14px;
-                        white-space: nowrap;
-                        z-index: 1002;
-                        opacity: 0;
-                        transition: opacity 0.2s ease-in-out;
-                        pointer-events: none;
-                        transform: translateX(-20%);
-                    }
-                \`;
-                document.head.appendChild(style);
-
-                const createTooltip = (text) => {
-                    const tooltip = document.createElement('div');
-                    tooltip.className = 'tooltip';
-                    tooltip.textContent = text;
-                    document.body.appendChild(tooltip);
-                    return tooltip;
-                };
-
-                const showTooltip = (tooltip, element) => {
-                    const rect = element.getBoundingClientRect();
-                    tooltip.style.top = \`\${rect.top + 40}px\`;
-                    tooltip.style.left = \`\${rect.left + (rect.width / 2) - (tooltip.offsetWidth / 2)}px\`;
-                    tooltip.style.opacity = '1';
-                };
-
-                const hideTooltip = (tooltip) => {
-                    tooltip.style.opacity = '0';
-                };
-
-                const createSwitchWithFunction = (labelText, tooltipText, onChangeFunction) => {
-                    const switchContainer = document.createElement('label');
-                    switchContainer.className = 'switch';
-
-                    const switchLabel = document.createElement('span');
-                    switchLabel.className = 'switchLabel';
-                    switchLabel.textContent = labelText;
-                    switchContainer.appendChild(switchLabel);
-
-                    const input = document.createElement('input');
-                    input.type = 'checkbox';
-                    switchContainer.appendChild(input);
-
-                    const slider = document.createElement('span');
-                    slider.className = 'slider off';
-                    switchContainer.appendChild(slider);
-
-                    input.addEventListener('change', () => {
-                        slider.className = input.checked ? 'slider' : 'slider off';
-                        onChangeFunction(input.checked);
-                    });
-
-                    const tooltip = createTooltip(tooltipText);
-
-                    switchContainer.addEventListener('mouseenter', () => showTooltip(tooltip, switchContainer));
-                    switchContainer.addEventListener('mouseleave', () => hideTooltip(tooltip));
-
-                    return switchContainer;
-                };
-
-            ////////////////////////////////////////////////// RAVE MODE
-            let colorChangeInterval;
-
-            const switchFunction1 = async (isChecked) => {
-                if (isChecked) {
-                    startColorChange();
-                } else {
-                    stopColorChange();
-                }
-            };
-
-            const startColorChange = () => {
-                if (!colorChangeInterval) {
-                    colorChangeInterval = setInterval(changeColorsToRainbow, 1000);
-                }
-            };
-
-            const stopColorChange = () => {
-                clearInterval(colorChangeInterval);
-                colorChangeInterval = null;
-                resetColors();
-            };
-
-            const changeColorsToRainbow = () => {
-                const divElements = document.querySelectorAll('div');
-                
-                divElements.forEach((el) => {
-                    const excludedTags = ['feColorMatrix', 'path', 'defs', 'clipPath', 'filter', 
-                                        'feOffset', 'feComposite', 'feGaussianBlur', 'symbol', 
-                                        'g', 'svg', 'link', 'script', 'head', 'meta'];
-
-                    if (excludedTags.includes(el.tagName.toLowerCase())) {
-                        return;
-                    }
-
-                    el.style.transition = 'color 0.5s, background-color 0.5s';
-                    let hue = Math.random() * 360;
-                    el.style.color = \`hsl(\${hue}, 100%, 50%)\`;
-                });
-            };
-
-            const resetColors = () => {
-                const divElements = document.querySelectorAll('div');
-                divElements.forEach((el) => {
-                    const excludedTags = ['feColorMatrix', 'path', 'defs', 'clipPath', 'filter', 
-                                        'feOffset', 'feComposite', 'feGaussianBlur', 'symbol', 
-                                        'g', 'svg', 'link', 'script', 'head', 'meta'];
-
-                    if (excludedTags.includes(el.tagName.toLowerCase())) {
-                        return;
-                    }
-
-                    el.style.color = '';
-                    el.style.backgroundColor = '';
-                });
-            };
-
-
-
-            //////////////////////////////////////////////////////////////////// show future clans page
-            const switchFunction2 = async (isChecked) => {
-                    if (isChecked) {
-                        window.location.href = 'https://cryzen.io/clans/warfare';
-                    }
-                    else {
-                        window.location.href = 'https://cryzen.io/';
-                    }
-                };
-
-                //////////////////////////////////////////////////////// crosshair
-
-                const addCrosshair = () => {
-                const style = document.createElement('style');
-                style.id = 'crosshairStyle';
-                style.textContent = \`
-                    @keyframes smoothColorChange {
-                        0% { background-color: #FF02D4; }
-                        50% { background-color: #8C0AFF; }
-                        100% { background-color: #FF02D4; }
-                    }
-                \`;
-                document.head.appendChild(style);
-
-                const verticalLine = document.createElement('div');
-                verticalLine.id = 'verticalLine';
-                verticalLine.style.cssText = \`
-                    width: 2px;
-                    height: 14px;
-                    position: absolute;
-                    top: 50%;
-                    left: 50%;
-                    transform: translate(-50%, -50%);
-                    z-index: 200;
-                    animation: smoothColorChange 2s infinite;
-                \`;
-
-                const horizontalLine = document.createElement('div');
-                horizontalLine.id = 'horizontalLine';
-                horizontalLine.style.cssText = \`
-                    width: 14px;
-                    height: 2px;
-                    position: absolute;
-                    top: 50%;
-                    left: 50%;
-                    transform: translate(-50%, -50%);
-                    z-index: 200;
-                    animation: smoothColorChange 2s infinite;
-                \`;
-
-                const verticalOutline = document.createElement('div');
-                verticalOutline.id = 'verticalOutline';
-                verticalOutline.style.cssText = \`
-                    width: 6px;
-                    height: 18px;
-                    background-color: #000000;
-                    position: absolute;
-                    top: 50%;
-                    left: 50%;
-                    transform: translate(-50%, -50%);
-                    z-index: 200;
-                \`;
-
-                const horizontalOutline = document.createElement('div');
-                horizontalOutline.id = 'horizontalOutline';
-                horizontalOutline.style.cssText = \`
-                    width: 18px;
-                    height: 6px;
-                    background-color: #000000;
-                    position: absolute;
-                    top: 50%;
-                    left: 50%;
-                    transform: translate(-50%, -50%);
-                    z-index: 200;
-                \`;
-
-                document.body.appendChild(verticalOutline);
-                document.body.appendChild(horizontalOutline);
-                document.body.appendChild(verticalLine);
-                document.body.appendChild(horizontalLine);
-            };
-
-            const removeCrosshair = () => {
-                const ids = ['crosshairStyle', 'verticalLine', 'horizontalLine', 'verticalOutline', 'horizontalOutline'];
-                ids.forEach(id => {
-                    const element = document.getElementById(id);
-                    if (element) {
-                        element.remove();
-                    }
-                });
-            };
-
-            const switchFunction3 = async (isChecked) => {
-                if (isChecked) {
-                    addCrosshair();
-                } else {
-                    removeCrosshair();
-                }
-            };
-
-            //////////////////////////////////////////////////////// "Touch grass" will close the client only in the lobby to prevent missclicks
-              const switchFunction4 = (isChecked) => {
-                  window.close();
-              };
-
-              const switchElement1 = createSwitchWithFunction('RAVE Mode', 'Color is key', switchFunction1);
-              const switchElement2 = createSwitchWithFunction('Clans Page', 'See the future clans page', switchFunction2);
-              const switchElement3 = createSwitchWithFunction('Crosshair Overlay', 'No crosshair? No problem!', switchFunction3);
-              const switchElement4 = createSwitchWithFunction('Touch Grass', 'Close the game and go outside!', switchFunction4);
-              settingsPanel.appendChild(switchElement1);
-              settingsPanel.appendChild(switchElement2);
-              settingsPanel.appendChild(switchElement3);
-              settingsPanel.appendChild(switchElement4);
-
-              settingsButton.addEventListener('click', () => {
-                  const isPanelVisible = settingsPanel.style.display === 'block';
-                  if (isPanelVisible) {
-                      settingsPanel.style.transform = 'translateX(100%)';
-                      settingsPanel.style.opacity = '0';
-                      setTimeout(() => {
-                          settingsPanel.style.display = 'none';
-                      }, 300);
-                  } else {
-                      settingsPanel.style.display = 'block';
-                      setTimeout(() => {
-                          settingsPanel.style.transform = 'translateX(0)';
-                          settingsPanel.style.opacity = '1';
-                      }, 10);
-                  }
-              });
-
-              ////////// Show player count
-              const updatePlayerCount = () => {
-              const euPlayersElement = document.createElement('div');
-              const usPlayersElement = document.createElement('div');
-              euPlayersElement.style.marginTop = '20px';
-              euPlayersElement.style.marginLeft = '40px';
-              euPlayersElement.style.fontWeight = 'bold';
-              euPlayersElement.style.color = 'gray';
-
-              usPlayersElement.style.marginTop = '10px';
-              usPlayersElement.style.marginLeft = '40px';
-              usPlayersElement.style.fontWeight = 'bold';
-              usPlayersElement.style.color = 'gray';
-
-              fetch("https://fra1-2.cryzen.io/matchmake/lobby")
-                  .then(r => r.json())
-                  .then(data => {
-                      const euCount = data.reduce((acc, el) => acc + el.clients, 0);
-                      euPlayersElement.textContent = \`EU Players: \${euCount}\`;
-                  })
-
-              fetch("https://usa-1.cryzen.io/matchmake/lobby")
-                  .then(r => r.json())
-                  .then(data => {
-                      const usCount = data.reduce((acc, el) => acc + el.clients, 0);
-                      usPlayersElement.textContent = \`US Players: \${usCount}\`;
-                  })
-
-              settingsPanel.appendChild(euPlayersElement);
-              settingsPanel.appendChild(usPlayersElement);
-          };
-
-          updatePlayerCount();
-
-
-
-              ///////////////// paint the sky
-              const srcset = Object.getOwnPropertyDescriptor(Image.prototype, 'src').set;
-
-              function getGradientDataURL(width, height, colors) {
-                  const canvas = document.createElement('canvas');
-                  canvas.width = width;
-                  canvas.height = height;
-                  const context = canvas.getContext('2d');
-
-                  const gradient = context.createLinearGradient(0, 0, width, 0);
-
-                  const colorStops = colors.length - 1;
-                  colors.forEach((color, index) => {
-                      gradient.addColorStop(index / colorStops, color);
-                  });
-
-                  context.fillStyle = gradient;
-                  context.fillRect(0, 0, width, height);
-
-                  return canvas.toDataURL();
-              }
-
-              Object.defineProperty(Image.prototype, 'src', {
-                  set(value) {
-                      this._src = value;
-                      if (typeof value != 'string') { return srcset.call(this, value); }
-
-                      if (value.includes('madap-')) {
-                          value = getGradientDataURL(256, 256, ['#FFBFF6', '#AC8EFF']);  // purple
-                      }
-                      if (value.includes('lightMap-')) {
-                          value = getGradientDataURL(256, 256, ['#FFFFFF', '#000000']);  // lightMap
-                      }
-                      if (value.includes('bulletTracer-')) {
-                          value = getGradientDataURL(256, 256, ['#B200FF', '#FF00DC']);
-                      }
-                          if (value.includes('blood') || value.includes('smoke') || value.includes('scope')) {
-                          value = getSqareDataURL(1, 1, '#00000000');
-                      }
-
-                      if (value.includes('2048-') || value.includes('3072-') || value.includes('1024-')) {
-                          value = getGradientDataURL(256, 256, [
-                              '#FF0000',  // red
-                              '#FF7F00',  // Orange
-                              '#FFFF00',  // yellow
-                              '#00FF00',  // Green
-                              '#0000FF',  // Blue
-                              '#4B0082',  // Indigo
-                              '#8B00FF',  // Violet
-                              '#4B0082',  // Indigo
-                              '#0000FF',  // Blue
-                              '#00FF00',  // Green
-                              '#FFFF00',  // yellow
-                              '#FF7F00',  // Orange
-                              '#FF0000'   // Red
-                          ]);
-                      }
-
-                      srcset.call(this, value);
-                  },
-                  get() { return this._src; }
-              });
-
-          })();
+  }
+
+  function addTabs() {
+    const nav = document.querySelector('div.navigation');
+    if (!nav) return;
+    const make = (text, href) => {
+      if (![...nav.children].some(el => el.textContent.trim() === text)) {
+        const a = document.createElement('a');
+        a.setAttribute('data-v-4eef0edf','');
+        a.className = 'nav-el';
+        a.href = href;
+        a.textContent = text;
+        a.style.textDecoration = 'none';
+        a.addEventListener('click', e => {
+          e.preventDefault();
+          window.history.pushState({}, '', href);
+          window.dispatchEvent(new Event('locationchange'));
+        });
+        nav.appendChild(a);
+      }
+    };
+    make('VIDEOS', VIDEOS_URL);
+    make('CLANS',  CLANS_URL);
+  }
+
+  async function setupPlayerCounts() {
+    try {
+      const container = await waitFor('div.twitch-youtube');
+      if ([...container.children].some(el => el.textContent.startsWith('EU Players'))) {
+        const divs = container.querySelectorAll('.empty');
+        euDiv = Array.from(divs).find(d => d.textContent.startsWith('EU Players'));
+        usDiv = Array.from(divs).find(d => d.textContent.startsWith('US Players'));
+        return;
+      }
+      euDiv = document.createElement('div');
+      euDiv.setAttribute('data-v-72672670','');
+      euDiv.className = 'empty';
+      euDiv.textContent = 'EU Players: …';
+
+      usDiv = document.createElement('div');
+      usDiv.setAttribute('data-v-72672670','');
+      usDiv.className = 'empty';
+      usDiv.textContent = 'US Players: …';
+
+      container.appendChild(euDiv);
+      container.appendChild(usDiv);
+    } catch (err) {
+      console.error('setupPlayerCounts:', err);
+    }
+  }
+
+  async function updatePlayerCounts() {
+    if (!euDiv || !usDiv) return;
+    try {
+      const [eu, us] = await Promise.all(
+        [EU_API, US_API].map(u => fetch(u).then(r => r.json()))
+      );
+      const sum = arr => arr.reduce((s,e) => s + (e.clients||0), 0);
+      euDiv.textContent = \`EU Players: \${sum(eu)}\`;
+      usDiv.textContent = \`US Players: \${sum(us)}\`;
+    } catch (err) {
+      console.error('updatePlayerCounts:', err);
+    }
+  }
+
+  function injectCss() {
+    const s = document.createElement('style');
+    s.textContent = \`
+      a.nav-el, a.nav-el:visited {
+        color: white !important;
+        text-decoration: none !important;
+      }
+    \`;
+    document.head.appendChild(s);
+  }
+
+  function startUrlWatcher() {
+    setInterval(() => {
+      if (location.pathname !== lastPath) {
+        lastPath = location.pathname;
+        if (lastPath === '/' || lastPath === '/play') {
+          addTabs();
+          setupPlayerCounts().then(updatePlayerCounts);
+        }
+      }
+    }, 300);
+  }
+
+  window.addEventListener('load', async () => {
+    injectCss();
+    await waitFor('div.navigation');
+    addTabs();
+    await setupPlayerCounts();
+    await updatePlayerCounts();
+    setInterval(updatePlayerCounts, UPDATE_INT);
+    startUrlWatcher();
+    window.addEventListener('popstate', () => {
+      if (location.pathname === '/' || location.pathname === '/play') {
+        addTabs();
+        setupPlayerCounts().then(updatePlayerCounts);
+      }
+    });
+  });
+
+
+
+    ///////////////// paint world
+    const srcset = Object.getOwnPropertyDescriptor(Image.prototype, 'src').set;
+
+    function getGradientDataURL(width, height, colors) {
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const context = canvas.getContext('2d');
+
+        const gradient = context.createLinearGradient(0, 0, width, 0);
+
+        const colorStops = colors.length - 1;
+        colors.forEach((color, index) => {
+            gradient.addColorStop(index / colorStops, color);
+        });
+
+        context.fillStyle = gradient;
+        context.fillRect(0, 0, width, height);
+
+        return canvas.toDataURL();
+    }
+
+    Object.defineProperty(Image.prototype, 'src', {
+        set(value) {
+            this._src = value;
+            if (typeof value != 'string') { return srcset.call(this, value); }
+
+            if (value.includes('madap-')) {
+                value = getGradientDataURL(256, 256, ['#FFBFF6', '#AC8EFF']);  // purple - idk what that was :skull:
+            }
+            if (value.includes('lightMap-')) {
+                value = getGradientDataURL(256, 256, ['#FFFFFF', '#000000']);  // change lightMap
+            }
+            if (value.includes('bulletTracer-')) {
+                value = getGradientDataURL(256, 256, ['#B200FF', '#FF00DC']); // change bullet tracers
+            }
+                if (value.includes('blood') || value.includes('smoke') || value.includes('scope')) {     // remove scope
+                value = getSqareDataURL(1, 1, '#00000000');
+            }
+
+            srcset.call(this, value);
+        },
+        get() { return this._src; }
+    });
 
   `;
 
-  const script3 = document.createElement("script"); // Faster box and card response (reload the site to skip animation)
+  const script3 = document.createElement("script"); // Faster box and card response
   script3.innerHTML = `
+    
 
-            function showToast(content, rarity) {
-                let toastContainer = document.getElementById('toast-container');
-                if (!toastContainer) {
-                    toastContainer = document.createElement('div');
-                    toastContainer.id = 'toast-container';
-                    toastContainer.style.position = 'fixed';
-                    toastContainer.style.top = '10px';
-                    toastContainer.style.left = '50%';
-                    toastContainer.style.transform = 'translateX(-50%)';
-                    toastContainer.style.zIndex = '9999';
-                    document.body.appendChild(toastContainer);
-                }
-
-                const toast = document.createElement('div');
-                toast.textContent = content;
-
-                let gradient;
-                switch (rarity?.toUpperCase()) {
-                    case 'LEGENDARY': gradient = 'linear-gradient(to bottom, #FFAD36, #FF8243)'; break;
-                    case 'EPIC': gradient = 'linear-gradient(to bottom, #C936FF, #8736FF)'; break;
-                    case 'COMMON': gradient = 'linear-gradient(to bottom, #83FD90, #25EA67)'; break;
-                    case 'RARE': gradient = 'linear-gradient(to bottom, #3578FE, #2144EB)'; break;
-                    default: gradient = 'linear-gradient(to bottom, #777, #444)';
-                }
-                toast.style.background = gradient;
-                toast.style.color = 'white';
-                toast.style.padding = '10px 20px';
-                toast.style.marginTop = '5px';
-                toast.style.borderRadius = '5px';
-                toast.style.boxShadow = '0 2px 5px rgba(0,0,0,0.3)';
-                toast.style.fontSize = '16px';
-                toast.style.fontFamily = 'Arial, sans-serif';
-                toast.style.fontWeight = 'bold';
-                toast.style.opacity = '0';
-                toast.style.transition = 'opacity 0.5s ease';
-
-                toastContainer.appendChild(toast);
-
-                setTimeout(() => {
-                    toast.style.opacity = '1';
-                }, 10);
-
-                setTimeout(() => {
-                    toast.style.opacity = '0';
-                    setTimeout(() => {
-                        toast.remove();
-                    }, 500);
-                }, 3000);
+        Object.defineProperty(window, 'IS_PROD', {
+            set() {},
+            get() {
+                return false;
             }
-
-            const originalXhrOpen = XMLHttpRequest.prototype.open;
-            XMLHttpRequest.prototype.open = function(method, url) {
-                this.addEventListener('load', function() {
-                    if (url.includes('openBox') || url.includes('openCard')) {
-                        const data = JSON.parse(this.responseText);
-
-                        if (url.includes('openBox')) {
-                            const content = \`\${data.name} (\${data.weaponName})\`;
-                            showToast(content, data.rarity);
-                        } else if (url.includes('openCard')) {
-                            if (data.type === 'item') {
-                                showToast('NEW WEAPON :D');
-                            } else {
-                                const content = \`\${data.value} x \${data.type.toUpperCase()}\`;
-                                showToast(content, data.rarity);
-                            }
-                        }
-                    }
-                });
-                originalXhrOpen.apply(this, arguments);
-            };
-
-            const originalFetch = window.fetch;
-            window.fetch = function(...args) {
-                const [url] = args;
-
-                if (typeof url === 'string' && (url.includes('openBox') || url.includes('openCard'))) {
-                    return originalFetch(...args).then(response => {
-                        response.clone().json().then(data => {
-                            if (url.includes('openBox')) {
-                                const content = \`\${data.name} (\${data.weaponName})\`;
-                                showToast(content, data.rarity);
-                            } else if (url.includes('openCard')) {
-                                if (data.type === 'item') {
-                                    showToast('NEW WEAPON :D');
-                                } else {
-                                    const content = \`\${data.value} x \${data.type.toUpperCase()}\`;
-                                    showToast(content, data.rarity);
-                                }
-                            }
-                        });
-                        return response;
-                    });
-                } else {
-                    return originalFetch(...args);
-                }
-            };
+        });
+            
 
     `;
 
