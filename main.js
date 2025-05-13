@@ -10,7 +10,8 @@ app.whenReady().then(() => {
     fullscreen: true,
     titleBarStyle: "default",
     backgroundColor: "#000000",
-    frame: false,
+    frame: true,
+    autoHideMenuBar: true,
     webPreferences: {
       contextIsolation: true,
       sandbox: true,
@@ -23,7 +24,7 @@ app.whenReady().then(() => {
   });
 
   const flags = [
-    ["disable-frame-rate-limit", null, true],
+    ["disable-frame-rate-limit", null, true], //disable maybe
     ["autoplay-policy", "no-user-gesture-required", true],
     ["disable-features", "NetworkService=1", true],
     ["enable-webgl", null, true],
@@ -47,7 +48,7 @@ app.whenReady().then(() => {
     ["enable-accelerated-video-decode", null, true],
     ["no-proxy-server", null, true],
     ["enable-raw-mouse-input", null, true],
-    ["disable-gpu-vsync", null, true],
+    ["disable-gpu-vsync", null, true], //disable maybe
     ["ignore-gpu-blacklist", null, true],
   ];
 
