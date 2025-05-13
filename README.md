@@ -4,13 +4,10 @@
 A electron client for the game **Cryzen.io** with some extra features.
 
 **Features:**
-- RAVE Mode
 - unlocked fps
 - raw input
 - fast load
-- crosshair overlay
 - remove visual clutter
-- custom sky
 - clear scope
 - player counter
 - ads skip
